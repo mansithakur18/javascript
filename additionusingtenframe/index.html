@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ten Frame Math Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+        .particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+        body {
+            
+    background-image: url('./img/math-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    font-family: sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.glass-effect {
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+        
+    </style>
+</head>
+<body class="py-8 px-4 overflow-x-hidden">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="w-full flex flex-col items-center"></div>
+
+    <!-- FIREWORKS CONTAINER -->
+    <div id="fireworks-container" class="fixed inset-0 pointer-events-none z-40 overflow-hidden hidden"></div>
+
+    <script>
+        // --- SVG ICONS ---
+        const icons = {
+            star: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+            starLarge: `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+            play: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+            trophy: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-yellow-400 mb-4"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>`,
+            rotate: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>`,
+            arrowRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`,
+            trash: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`
+        };
+
+        // --- GAME STATE ---
+        let state = {
+            screen: 'start', // 'start', 'playing', 'end'
+            level: 1,
+            questions: [],
+            currentQIndex: 0,
+            score: 0,
+            feedback: null, // 'correct', 'incorrect'
+            selectedAnswer: null,
+            frameSlots: Array(30).fill(null),
+            activeColor: 'bg-red-500'
+        };
+
+        const optionColors = [
+            "bg-pink-400 hover:bg-pink-500 border-pink-600 text-white shadow-pink-200",
+            "bg-yellow-400 hover:bg-yellow-500 border-yellow-600 text-white shadow-yellow-200",
+            "bg-orange-400 hover:bg-orange-500 border-orange-600 text-white shadow-orange-200",
+            "bg-teal-400 hover:bg-teal-500 border-teal-600 text-white shadow-teal-200"
+        ];
+
+        // --- LOGIC ---
+        function generateQuestions(targetLevel) {
+            const newQuestions = [];
+            for (let i = 0; i < 10; i++) {
+                const n1 = Math.floor(Math.random() * 9) + 1; // 1 to 9
+                const n2 = Math.floor(Math.random() * 9) + 1; // 1 to 9
+                const n3 = targetLevel === 2 ? Math.floor(Math.random() * 9) + 1 : 0;
+                const answer = n1 + n2 + n3;
+
+                const optionsSet = new Set([answer]);
+                while (optionsSet.size < 4) {
+                    const variance = Math.floor(Math.random() * 7) - 3;
+                    const wrongOpt = answer + variance;
+                    if (wrongOpt > 0 && wrongOpt !== answer) {
+                        optionsSet.add(wrongOpt);
+                    }
+                }
+                newQuestions.push({
+                    n1, n2, n3, answer,
+                    options: Array.from(optionsSet).sort(() => Math.random() - 0.5)
+                });
+            }
+            return newQuestions;
+        }
+
+        window.startGame = (lvl) => {
+            state.level = lvl;
+            state.questions = generateQuestions(lvl);
+            state.currentQIndex = 0;
+            state.score = 0;
+            state.feedback = null;
+            state.selectedAnswer = null;
+            state.frameSlots = Array(30).fill(null);
+            state.activeColor = 'bg-red-500';
+            state.screen = 'playing';
+            render();
+        };
+
+        window.handleAnswer = (option) => {
+            if (state.feedback) return; // Prevent multiple clicks
+
+            state.selectedAnswer = option;
+            const currentQ = state.questions[state.currentQIndex];
+            const isCorrect = option === currentQ.answer;
+
+            if (isCorrect) {
+                state.score++;
+                state.feedback = 'correct';
+                showFireworks();
+            } else {
+                state.feedback = 'incorrect';
+            }
+            render();
+
+            setTimeout(() => {
+                if (state.currentQIndex < 9) {
+                    state.currentQIndex++;
+                    state.feedback = null;
+                    state.selectedAnswer = null;
+                    state.frameSlots = Array(30).fill(null);
+                    state.activeColor = 'bg-red-500';
+                } else {
+                    state.screen = 'end';
+                }
+                render();
+            }, isCorrect ? 2500 : 3500);
+        };
+
+        window.handleSlotClick = (index) => {
+            if (state.feedback) return;
+            
+            if (state.activeColor === null) {
+                state.frameSlots[index] = null; // Eraser mode
+            } else {
+                state.frameSlots[index] = state.frameSlots[index] === state.activeColor ? null : state.activeColor;
+            }
+            renderTenFrames(); // partial render for efficiency
+        };
+
+        window.setActiveColor = (color) => {
+            state.activeColor = color;
+            renderColorPicker(); // partial render
+        };
+
+        window.clearAllDots = () => {
+            state.frameSlots = Array(30).fill(null);
+            renderTenFrames(); // partial render
+        };
+
+        window.goHome = () => {
+            state.screen = 'start';
+            render();
+        };
+
+        // --- RENDERERS ---
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.screen === 'start') {
+                app.innerHTML = `
+                    <div class="flex items-center justify-center min-h-[80vh] w-full">
+                        <div class="bg-white/70 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-lg w-full text-center border-b-8 border-sky-300">
+                            <div class="flex justify-center mb-6">
+                               <div class="bg-yellow-400 p-4 rounded-full shadow-lg animate-pop">
+                                  ${icons.starLarge}
+                               </div>
+                            </div>
+                            <h1 class="text-4xl font-extrabold text-indigo-700 mb-2">Ten Frame Math!</h1>
+                            <p class="text-lg text-gray-600 mb-8">Add the colorful dots to find the magic number.</p>
+                            
+                            <div class="space-y-4">
+                                <button onclick="startGame(1)" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex items-center justify-center text-xl border-b-4 border-green-700">
+                                    ${icons.play} Level 1 (Two Numbers)
+                                </button>
+                                <button onclick="startGame(2)" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex items-center justify-center text-xl border-b-4 border-purple-700">
+                                    ${icons.play} Level 2 (Three Numbers)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (state.screen === 'end') {
+                if (state.score > 7) showFireworks();
+                
+                let nextLevelBtn = '';
+                if (state.level === 1) {
+                    nextLevelBtn = `<button onclick="startGame(2)" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-2xl shadow flex items-center justify-center text-xl mt-4">
+                        ${icons.arrowRight} Try Level 2
+                    </button>`;
+                }
+
+                app.innerHTML = `
+                    <div class="flex items-center justify-center min-h-[80vh] w-full">
+                        <div class="bg-white/95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-lg w-full text-center border-b-8 border-sky-300 relative z-10 animate-pop">
+                            ${icons.trophy}
+                            <h1 class="text-4xl font-extrabold text-indigo-700 mb-4">Game Over!</h1>
+                            <p class="text-2xl font-bold text-gray-700 mb-6">
+                                You scored: <span class="text-indigo-600">${state.score}</span> out of 10
+                            </p>
+                            <div class="space-y-4">
+                                <button onclick="startGame(${state.level})" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl shadow flex items-center justify-center text-xl">
+                                    ${icons.rotate} Play Again
+                                </button>
+                                ${nextLevelBtn}
+                                <button onclick="goHome()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-2xl shadow flex items-center justify-center text-lg mt-4">
+                                    Main Menu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (state.screen === 'playing') {
+                const currentQ = state.questions[state.currentQIndex];
+                
+                app.innerHTML = `
+                    <!-- Header -->
+                    <div class="w-full max-w-4xl flex justify-between items-center mb-6 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-md border-b-4 border-gray-200">
+                        <div class="text-xl font-bold text-gray-700">Question: ${state.currentQIndex + 1}/10</div>
+                        <div class="flex items-center text-2xl font-bold text-yellow-500">
+                            <span class="mr-2 text-yellow-400">${icons.star}</span> ${state.score}
+                        </div>
+                    </div>
+
+                    <!-- Main Game Area -->
+                    <div class="w-full max-w-4xl bg-white/40 backdrop-blur-md rounded-3xl shadow-2xl border border-white/40 p-6 flex flex-col items-center border-b-8 border-gray-200">
+                        
+                        <!-- Equation -->
+                        <div class="text-4xl md:text-6xl font-extrabold mb-4 flex items-center space-x-4">
+                            <span class="text-red-500">${currentQ.n1}</span>
+                            <span class="text-gray-400">+</span>
+                            <span class="text-blue-500">${currentQ.n2}</span>
+                            ${state.level === 2 ? `
+                                <span class="text-gray-400">+</span>
+                                <span class="text-green-500">${currentQ.n3}</span>
+                            ` : ''}
+                            <span class="text-gray-400">=</span>
+                            <span class="text-indigo-600 border-b-4 border-indigo-200 min-w-[60px] text-center inline-block pb-1">
+                                ${state.feedback ? currentQ.answer : '?'}
+                            </span>
+                        </div>
+
+                        <div class="text-3xl font-extrabold mb-4 text-indigo-500 h-8">What is the total?</div>
+
+                        <!-- Color Picker Palette (Injected dynamically) -->
+                        <div id="color-picker-container" class="flex flex-wrap justify-center items-center gap-3 md:gap-4 mb-6 bg-white/50 backdrop-blur-md p-3 md:p-4 rounded-2xl shadow-sm border-2 border-sky-100"></div>
+
+                        <!-- Ten Frames Visualization (Injected dynamically) -->
+                        <div id="ten-frames-container" class="flex flex-wrap justify-center mb-8 max-w-3xl"></div>
+
+                        <!-- Options -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl" id="options-container">
+                            ${currentQ.options.map((opt, i) => {
+                                let btnClass = optionColors[i % optionColors.length];
+                                
+                                if (state.feedback) {
+                                    if (opt === currentQ.answer) {
+                                        btnClass = "bg-green-500 text-white border-green-600 animate-pop shadow-green-200 shadow-lg";
+                                    } else if (opt === state.selectedAnswer && state.feedback === 'incorrect') {
+                                        btnClass = "bg-red-500 text-white border-red-600 animate-shake";
+                                    } else {
+                                        btnClass = "bg-gray-200 text-gray-400 border-gray-300 opacity-50";
+                                    }
+                                }
+
+                                return `<button onclick="handleAnswer(${opt})" ${state.feedback ? 'disabled' : ''} class="text-4xl font-extrabold py-6 rounded-2xl border-b-8 transition-all duration-200 shadow-lg hover:-translate-y-1 hover:shadow-xl ${btnClass}">${opt}</button>`;
+                            }).join('')}
+                        </div>
+
+                        <!-- Feedback area -->
+                        <div class="h-20 mt-6 flex items-center justify-center w-full">
+                            ${state.feedback === 'correct' ? `
+                                <div class="text-3xl font-extrabold text-green-500 animate-pop flex items-center">
+                                    <span class="mr-2">${icons.star}</span> Awesome! Correct!
+                                </div>
+                            ` : ''}
+                            ${state.feedback === 'incorrect' ? `
+                                <div class="text-2xl font-bold text-red-500 animate-pop bg-red-50 px-6 py-4 rounded-2xl">
+                                    Oops! Let's count the dots together. The right answer is <span class="text-3xl font-extrabold">${currentQ.answer}</span>.
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                renderColorPicker();
+                renderTenFrames();
+            }
+        }
+
+        function renderColorPicker() {
+            const container = document.getElementById('color-picker-container');
+            if(!container) return;
+
+            let greenBtn = state.level === 2 ? `
+                <button onclick="setActiveColor('bg-green-500')" class="w-12 h-12 rounded-full bg-green-500 transition-all ${state.activeColor === 'bg-green-500' ? 'ring-4 ring-yellow-400 scale-110 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105'}" title="Green"></button>
+            ` : '';
+
+            container.innerHTML = `
+                <span class="text-xl font-bold text-gray-500 md:mr-2">Paint:</span>
+                <button onclick="setActiveColor('bg-red-500')" class="w-12 h-12 rounded-full bg-red-500 transition-all ${state.activeColor === 'bg-red-500' ? 'ring-4 ring-yellow-400 scale-110 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105'}" title="Red"></button>
+                <button onclick="setActiveColor('bg-blue-500')" class="w-12 h-12 rounded-full bg-blue-500 transition-all ${state.activeColor === 'bg-blue-500' ? 'ring-4 ring-yellow-400 scale-110 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105'}" title="Blue"></button>
+                ${greenBtn}
+                <div class="w-px h-8 bg-gray-300 hidden sm:block mx-1"></div>
+                <button onclick="setActiveColor(null)" class="w-12 h-12 rounded-full bg-white border-2 border-dashed border-gray-400 flex items-center justify-center transition-all ${state.activeColor === null ? 'ring-4 ring-yellow-400 scale-110 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105'}" title="Eraser">❌</button>
+                <div class="w-px h-8 bg-gray-300 hidden sm:block mx-1"></div>
+                <button onclick="clearAllDots()" class="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all shadow-sm border border-gray-300 active:scale-95 ml-2" title="Clear All Dots">
+                    ${icons.trash} Clear All
+                </button>
+            `;
+        }
+
+        function renderTenFrames() {
+            const container = document.getElementById('ten-frames-container');
+            if(!container) return;
+            
+            container.innerHTML = '';
+            const numFrames = state.level === 1 ? 2 : 3;
+
+            for (let f = 0; f < numFrames; f++) {
+                const startIndex = f * 10;
+                let grid = document.createElement('div');
+                grid.className = "grid grid-cols-5 gap-2 p-3 bg-white/55 backdrop-blur-md rounded-xl shadow-inner border-4 border-gray-200 mx-2 mb-4 w-64";
+                
+                for (let i = 0; i < 10; i++) {
+                    const globalIndex = startIndex + i;
+                    const dotColor = state.frameSlots[globalIndex];
+                    
+                    let slot = document.createElement('div');
+                    slot.className = "w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 transition-colors cursor-pointer hover:bg-gray-200";
+                    slot.onclick = () => handleSlotClick(globalIndex);
+                    
+                    if (dotColor) {
+                        slot.innerHTML = `<div class="w-8 h-8 rounded-full ${dotColor} shadow-sm animate-pop"></div>`;
+                    }
+                    grid.appendChild(slot);
+                }
+                container.appendChild(grid);
+            }
+        }
+
+        // --- ANIMATIONS ---
+        function showFireworks() {
+            const container = document.getElementById('fireworks-container');
+            container.innerHTML = '';
+            container.classList.remove('hidden');
+            
+            const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#a855f7'];
+            
+            for(let f = 0; f < 8; f++) {
+                const x = 20 + Math.random() * 60;
+                const y = 20 + Math.random() * 50;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const firecracker = document.createElement('div');
+                firecracker.style.left = `${x}%`;
+                firecracker.style.top = `${y}%`;
+                firecracker.className = "absolute pointer-events-none z-50";
+                
+                for(let p = 0; p < 12; p++) {
+                    const angle = (p / 12) * 360;
+                    const distance = 60 + Math.random() * 40;
+                    const tx = `${Math.cos((angle * Math.PI) / 180) * distance}px`;
+                    const ty = `${Math.sin((angle * Math.PI) / 180) * distance}px`;
+                    
+                    const particle = document.createElement('div');
+                    particle.className = "particle";
+                    particle.style.backgroundColor = color;
+                    particle.style.boxShadow = `0 0 8px ${color}`;
+                    particle.style.setProperty('--tx', tx);
+                    particle.style.setProperty('--ty', ty);
+                    
+                    firecracker.appendChild(particle);
+                }
+                container.appendChild(firecracker);
+            }
+
+            setTimeout(() => {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            }, 1500);
+        }
+
+        // Initialize App
+        render();
+
+    </script>
+</body>
+</html>
