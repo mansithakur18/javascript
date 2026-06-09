@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Heavier and Lighter - Kids Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+
+        :root {
+            --bg-color: #87CEEB; /* Sky blue */
+            --cloud-color: #ffffff;
+            --primary-btn: #FF9A8B;
+            --primary-btn-hover: #FF7A6B;
+            --text-color: #4A4A4A;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            
+            /* Balance Scale Colors */
+            --wood-dark: #8B4513;
+            --wood-light: #DEB887;
+            --metal: #C0C0C0;
+            --basket-color: #FFB6C1; /* Pastel pink baskets */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation; /* Prevent zoom on double tap */
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            background-image: url('image.png');
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Background Decorations */
+        .cloud {
+            position: absolute;
+            background: var(--cloud-color);
+            border-radius: 50px;
+            opacity: 0.8;
+            animation: float 20s infinite linear;
+            z-index: 0;
+            
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: var(--cloud-color);
+            border-radius: 50%;
+        }
+        .cloud1 { width: 120px; height: 40px; top: 10%; left: -150px; animation-duration: 25s; }
+        .cloud1::before { width: 50px; height: 50px; top: -20px; left: 15px; }
+        .cloud1::after { width: 40px; height: 40px; top: -15px; left: 60px; }
+        
+        .cloud2 { width: 100px; height: 35px; top: 30%; left: -100px; animation-duration: 35s; animation-delay: 5s; transform: scale(0.8); }
+        .cloud2::before { width: 40px; height: 40px; top: -15px; left: 15px; }
+        .cloud2::after { width: 30px; height: 30px; top: -10px; left: 50px; }
+
+        @keyframes float {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(110vw); }
+        }
+
+        /* Main Game Container */
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* UI Elements */
+        .title {
+            font-size: 3rem;
+            color: #FF6B6B;
+            text-shadow: 2px 2px 0px #FFF, 4px 4px 0px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 30px;
+            animation: bounceIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #FF9A8B, #FF6A88);
+            border: none;
+            border-bottom: 6px solid #D64560;
+            border-radius: 30px;
+            padding: 15px 40px;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transition: all 0.1s ease;
+            font-family: inherit;
+        }
+        .btn:active {
+            transform: translateY(6px);
+            border-bottom: 0px solid #D64560;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        /* HUD */
+        #hud{
+    width: 100%;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    /* GLASS EFFECT */
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    border: 2px solid rgba(255,255,255,0.35);
+
+    border-bottom-left-radius: 25px;
+    border-bottom-right-radius: 25px;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,0.12),
+        inset 0 1px 1px rgba(255,255,255,0.4);
+}
+
+        .stars-container {
+            display: flex;
+            gap: 5px;
+        }
+        .star {
+            font-size: 2rem;
+            color: #DDD; /* Empty star */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .star.earned {
+            color: #FFD700; /* Gold */
+            transform: scale(1.2);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        }
+
+        .level-indicator {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #4A90E2;
+            background: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 3px solid #4A90E2;
+        }
+
+        /* Question Banner */
+       #question-banner{
+
+    background: rgba(255,255,255,0.35);
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+
+    border: 3px solid rgba(255,255,255,0.5);
+
+    padding: 16px 34px;
+
+    border-radius: 30px;
+
+    font-size: 2rem;
+    font-weight: 900;
+
+    color: #8E44AD;
+
+    margin: 18px auto;
+
+    text-align: center;
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,0.12),
+        inset 0 1px 1px rgba(255,255,255,0.5);
+
+    max-width: 92%;
+
+    text-shadow:
+        0 2px 4px rgba(255,255,255,0.6);
+}
+
+        /* Beam Balance CSS Art */
+        .scale-container{
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    height: 340px;
+    margin: 10px auto 30px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+        /* Base and Stand */
+        .scale-base{
+    position: absolute;
+    bottom: 0;
+    width: 180px;
+    height: 28px;
+    border-radius: 20px;
+    background: linear-gradient(to bottom,#8B4513,#5c2f0d);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.25);
+}
+
+        .scale-pillar{
+    position: absolute;
+    bottom: 28px;
+    width: 34px;
+    height: 190px;
+    border-radius: 20px;
+    background: linear-gradient(to right,#8a4d16,#d58b3e,#8a4d16);
+    box-shadow: inset 0 0 8px rgba(255,255,255,0.4);
+}
+       .scale-pin{
+    position: absolute;
+    top: 74px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle,#ffffff,#9e9e9e);
+    z-index: 20;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+/* ====================================
+   BEAM WRAPPER
+==================================== */
+
+.scale-beam-wrapper{
+    position: absolute;
+    top: 80px;
+    width: 420px;
+    height: 240px;
+    transition: transform 0.8s ease;
+    transform-origin: center center;
+}
+
+/* ====================================
+   BEAM
+==================================== */
+
+.scale-beam{
+    position: absolute;
+    top: 5px;
+    width: 100%;
+    height: 16px;
+    border-radius: 20px;
+    background: linear-gradient(to bottom,#f6c177,#b66a1f);
+    box-shadow:
+        inset 0 -3px 5px rgba(0,0,0,0.25),
+        0 5px 10px rgba(0,0,0,0.2);
+}
+
+/* ====================================
+   HANGERS
+==================================== */
+
+.hanger{
+    position: absolute;
+    top: 8px;
+    width: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.8s ease;
+}
+
+.hanger.left{
+    left: -10px;
+}
+
+.hanger.right{
+    right: -10px;
+}
+
+/* ====================================
+   STRINGS
+==================================== */
+
+.string{
+    width: 3px;
+    height: 90px;
+    background: #b0b0b0;
+    position: relative;
+}
+
+.string::before,
+.string::after{
+    content: "";
+    position: absolute;
+    width: 3px;
+    height: 90px;
+    background: #b0b0b0;
+}
+
+.string::before{
+    transform: rotate(28deg);
+    transform-origin: top;
+    left: -4px;
+}
+
+.string::after{
+    transform: rotate(-28deg);
+    transform-origin: top;
+    left: 5px;
+    
+}
+
+/* ====================================
+   BASKETS
+==================================== */
+
+.basket{
+    width: 115px;
+    height: 70px;
+    border-radius: 0 0 60px 60px;
+    background: linear-gradient(to bottom,#ff9ed2,#ff4ca0);
+    border: 3px solid #ff1493;
+    border-top: none;
+    margin-top: -4px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding-bottom: 8px;
+    box-shadow:
+        inset 0 4px 6px rgba(255,255,255,0.4),
+        0 8px 12px rgba(0,0,0,0.2);
+}
+
+/* ====================================
+   ITEMS
+==================================== */
+
+.basket-item{
+    font-size: 78px;
+    filter: drop-shadow(0 5px 8px rgba(0,0,0,0.25));
+    animation: floaty 2s ease-in-out infinite;
+}
+
+/* ====================================
+   FLOATING ANIMATION
+==================================== */
+
+@keyframes floaty{
+
+    0%{
+        transform: translateY(0px);
+    }
+
+    50%{
+        transform: translateY(-5px);
+    }
+
+    100%{
+        transform: translateY(0px);
+    }
+
+}
+
+        /* Level 1 Options */
+        .options-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            padding: 0 20px;
+        }
+       .option-card{
+
+    background: rgba(255,255,255,0.35);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    border: 2px solid rgba(255,255,255,0.45);
+
+    border-radius: 24px;
+
+    padding: 18px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,0.12),
+        inset 0 1px 1px rgba(255,255,255,0.5);
+
+    transition: all 0.25s ease;
+
+    width: 150px;
+}
+
+.option-card:hover{
+
+    transform: translateY(-6px) scale(1.05);
+
+    border-color: #ffffff;
+
+    box-shadow:
+        0 12px 30px rgba(0,0,0,0.18),
+        0 0 20px rgba(255,255,255,0.4);
+}
+.option-name{
+    font-weight: 900;
+    font-size: 1.3rem;
+    color: #4b4b4b;
+
+    text-shadow:
+        0 1px 2px rgba(255,255,255,0.7);
+}
+        .option-card:active {
+            transform: scale(0.95);
+        }
+        .option-icon {
+            font-size: 60px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+            margin-bottom: 10px;
+        }
+        .option-name {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #555;
+        }
+
+        /* Level 2 Drag Area */
+        #drag-items-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            background: rgba(255,255,255,0.6);
+            padding: 15px;
+            border-radius: 30px;
+            margin-top: 10px;
+            width: 90%;
+        }
+        .draggable-item {
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+            cursor: grab;
+            touch-action: none; /* Crucial for custom touch drag */
+            transition: transform 0.1s;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .draggable-item.dragging {
+            position: absolute;
+            z-index: 100;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.3);
+            pointer-events: none; /* Let events pass through to drop zones */
+            transform: scale(1.1);
+        }
+        .draggable-item.placed {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .drop-highlight {
+            box-shadow: 0 0 15px 5px #FFFF00 !important;
+            border-color: #FFFF00 !important;
+        }
+
+        /* Popups */
+        .popup-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .popup-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .popup-content {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transform: scale(0.5);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 5px solid #FFD700;
+        }
+        .popup-overlay.active .popup-content {
+            transform: scale(1);
+        }
+        .popup-icon { font-size: 80px; margin-bottom: 10px; }
+        .popup-msg { font-size: 2rem; font-weight: 900; color: #333; }
+
+        /* End Screen specific */
+        .trophy { font-size: 100px; animation: bounce 2s infinite; }
+
+        /* Animations */
+        @keyframes bounceIn {
+            0% { transform: scale(0.1); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-30px); }
+            60% { transform: translateY(-15px); }
+        }
+        
+        /* Particle effects (Confetti) container */
+        #confetti-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 150;
+            overflow: hidden;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: red;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+        /* Responsive tweaks */
+        @media (max-height: 700px) {
+            .scale-container { transform: scale(0.8); margin: 0 auto; }
+            .title { font-size: 2.2rem; margin-bottom: 10px; }
+            #question-banner { font-size: 1.4rem; padding: 10px 20px; margin: 10px auto; }
+            .option-icon { font-size: 45px; }
+            .draggable-item { width: 55px; height: 55px; font-size: 30px; }
+        }
+
+        @media(max-width:768px){
+
+    .scale-container{
+        transform: scale(0.82);
+        margin-top: -20px;
+    }
+
+    .option-card{
+        width: 120px;
+    }
+
+}
+
+@media(max-width:480px){
+
+    .scale-container{
+        transform: scale(0.68);
+        margin-top: -45px;
+    }
+
+    #question-banner{
+        font-size: 1.4rem;
+    }
+
+    .option-card{
+        width: 110px;
+        padding: 10px;
+    }
+
+}
+    </style>
+</head>
+<body>
+
+    <!-- Background Decoration -->
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+
+    <div id="game-container">
+        
+        <!-- Screen 1: Start -->
+        <div id="screen-start" class="screen active">
+            <h1 class="title">Heavier<br>&<br>Lighter</h1>
+            <div style="font-size: 80px; margin-bottom: 20px; animation: bounce 2s infinite;">⚖️</div>
+            <p style="font-size: 1.2rem; font-weight: bold; color: #666; margin-bottom: 20px; text-align: center;">Turn on sound for the best experience!</p>
+            <button class="btn" onclick="startGame()">Play Now!</button>
+        </div>
+
+        <!-- Main Game UI (Shared between levels) -->
+        <div id="screen-game" class="screen">
+            <div id="hud">
+                <div class="level-indicator" id="level-text">Level 1</div>
+                <div class="stars-container" id="stars-display">
+                    <!-- Stars injected via JS -->
+                </div>
+            </div>
+
+            <div id="question-banner">Which object is heavier?</div>
+
+            <!-- Beam Balance -->
+            <div class="balance-area">
+
+        <div class="scale-container">
+
+    <!-- BASE -->
+    <div class="scale-base"></div>
+
+    <!-- STAND -->
+    <div class="scale-pillar"></div>
+
+    <!-- CENTER PIN -->
+    <div class="scale-pin"></div>
+
+    <!-- MOVING BEAM -->
+    <div class="scale-beam-wrapper" id="scale-beam">
+
+        <div class="scale-beam"></div>
+
+        <!-- LEFT SIDE -->
+        <div class="hanger left" id="hanger-left">
+
+            <div class="string"></div>
+
+            <div class="basket" id="basket-left">
+                <div class="basket-item" id="item-left"></div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="hanger right" id="hanger-right">
+
+            <div class="string"></div>
+
+            <div class="basket" id="basket-right">
+                <div class="basket-item" id="item-right"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+            <!-- Level 1 Interaction Area -->
+            <div id="level1-ui" class="options-container" style="display: none;">
+                <div class="option-card" onclick="checkAnswerL1('left')">
+                    <div class="option-icon" id="opt-left-icon"></div>
+                    <div class="option-name" id="opt-left-name"></div>
+                </div>
+                <div class="option-card" onclick="checkAnswerL1('right')">
+                    <div class="option-icon" id="opt-right-icon"></div>
+                    <div class="option-name" id="opt-right-name"></div>
+                </div>
+            </div>
+
+            <!-- Level 2 Interaction Area -->
+            <div id="level2-ui" style="display: none; flex-direction: column; align-items: center; width: 100%;">
+                <p style="font-weight: 800; color: #555; margin-bottom: 5px;">Drag objects to the correct baskets!</p>
+                <div id="drag-items-container">
+                    <!-- Draggable items injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen: End of Level / Game -->
+        <div id="screen-end" class="screen">
+            <div class="trophy">🏆</div>
+            <h1 class="title" style="margin-bottom: 10px;">Great Job!</h1>
+            <p id="end-score-msg" style="font-size: 2rem; font-weight: 800; color: #555; margin-bottom: 30px;">You got 5/5 Stars!</p>
+            <button class="btn" id="next-action-btn" onclick="nextAction()">Next Level</button>
+        </div>
+
+        <!-- Overlay Popups -->
+        <div id="feedback-popup" class="popup-overlay">
+            <div class="popup-content">
+                <div class="popup-icon" id="feedback-icon">🌟</div>
+                <div class="popup-msg" id="feedback-msg">Correct!</div>
+            </div>
+        </div>
+
+        <div id="confetti-container"></div>
+    </div>
+
+    <script>
+        // --- 1. GAME DATA ---
+        // Using Emojis ensures zero loading time, sharp resolution, and strictly no external image dependencies.
+        const dictionary = {
+            heavy: [
+                { id: 'elephant', icon: '🐘', name: 'Elephant', weight: 100 },
+                { id: 'bus', icon: '🚌', name: 'Bus', weight: 80 },
+                { id: 'whale', icon: '🐋', name: 'Whale', weight: 150 },
+                { id: 'rock', icon: '🪨', name: 'Rock', weight: 50 },
+                { id: 'tree', icon: '🌳', name: 'Tree', weight: 70 },
+                { id: 'car', icon: '🚗', name: 'Car', weight: 60 }
+            ],
+            light: [
+                { id: 'feather', icon: '🪶', name: 'Feather', weight: 1 },
+                { id: 'balloon', icon: '🎈', name: 'Balloon', weight: 0.5 },
+                { id: 'apple', icon: '🍎', name: 'Apple', weight: 5 },
+                { id: 'butterfly', icon: '🦋', name: 'Butterfly', weight: 0.1 },
+                { id: 'pencil', icon: '✏️', name: 'Pencil', weight: 2 },
+                { id: 'leaf', icon: '🍃', name: 'Leaf', weight: 0.2 }
+            ]
+        };
+
+        // --- 2. GAME STATE ---
+        let currentLevel = 1;
+        let questionCount = 0;
+        const maxQuestions = 5;
+        let score = 0;
+        let currentQuestion = {};
+        let isProcessing = false;
+
+        // Audio Context for built-in sound effects
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        // --- 3. UTILITIES & AUDIO ---
+        
+        // Built-in Synthesizer for sound effects (No external MP3s needed)
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // Web Speech API for Voice Over
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current speaking
+                const utterance = new SpeechSynthesisUtterance(text);
+                // Try to find a friendly female voice
+                const voices = window.speechSynthesis.getVoices();
+                const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google US English'));
+                if (femaleVoice) utterance.voice = femaleVoice;
+                utterance.rate = 0.9; // Slightly slower for kids
+                utterance.pitch = 1.2; // Slightly higher/friendlier
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // --- 4. VISUAL EFFECTS ---
+        function createConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d'];
+            
+            for (let i = 0; i < 50; i++) {
+                const conf = document.createElement('div');
+                conf.classList.add('confetti');
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                conf.style.animationDelay = (Math.random() * 1) + 's';
+                container.appendChild(conf);
+            }
+            setTimeout(() => { container.innerHTML = ''; }, 4000);
+        }
+
+        function renderStars() {
+            const container = document.getElementById('stars-display');
+            container.innerHTML = '';
+            for (let i = 0; i < maxQuestions; i++) {
+                const star = document.createElement('div');
+                star.className = `star ${i < score ? 'earned' : ''}`;
+                star.innerText = '★';
+                container.appendChild(star);
+            }
+        }
+
+        // Core physics animation for the scale
+        function setBalanceTilt(angle) {
+            const beam = document.getElementById('scale-beam');
+            const hangerL = document.getElementById('hanger-left');
+            const hangerR = document.getElementById('hanger-right');
+            
+            beam.style.transform = `rotate(${angle}deg)`;
+            // Baskets counter-rotate to stay upright
+            hangerL.style.transform = `rotate(${-angle}deg)`;
+            hangerR.style.transform = `rotate(${-angle}deg)`;
+        }
+
+        // --- 5. LEVEL 1 LOGIC ---
+        
+        function loadLevel1Question() {
+            isProcessing = false;
+            document.getElementById('level1-ui').style.display = 'flex';
+            document.getElementById('level2-ui').style.display = 'none';
+
+            const hItem = getRandomItem(dictionary.heavy);
+            const lItem = getRandomItem(dictionary.light);
+            
+            // Randomize position
+            const items = shuffleArray([hItem, lItem]);
+            const isAskingHeavy = Math.random() > 0.5;
+            
+            currentQuestion = {
+                left: items[0],
+                right: items[1],
+                askHeavy: isAskingHeavy,
+                correctSide: items[0].weight > items[1].weight ? (isAskingHeavy ? 'left' : 'right') : (isAskingHeavy ? 'right' : 'left')
+            };
+
+            // Update UI texts
+            const qText = `Which object is ${isAskingHeavy ? 'heavier' : 'lighter'}?`;
+            document.getElementById('question-banner').innerText = qText;
+            speak(qText);
+
+            // Place items visually in baskets
+            document.getElementById('item-left').innerText = items[0].icon;
+            document.getElementById('item-right').innerText = items[1].icon;
+            document.getElementById('item-left').style.opacity = '1';
+            document.getElementById('item-right').style.opacity = '1';
+
+            // Update Option buttons
+            document.getElementById('opt-left-icon').innerText = items[0].icon;
+            document.getElementById('opt-left-name').innerText = items[0].name;
+            document.getElementById('opt-right-icon').innerText = items[1].icon;
+            document.getElementById('opt-right-name').innerText = items[1].name;
+
+            // Tilt scale realistically based on weights
+            // Heavy side goes down (positive angle if right is heavy, negative if left is heavy)
+            const angle = items[0].weight > items[1].weight ? -12 : 12;
+            setBalanceTilt(angle);
+        }
+
+        function checkAnswerL1(selectedSide) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const isCorrect = selectedSide === currentQuestion.correctSide;
+            handleAnswerResult(isCorrect);
+        }
+
+        // --- 6. LEVEL 2 LOGIC (Drag & Drop) ---
+
+        let draggingElement = null;
+        let startX, startY, initialLeft, initialTop;
+        let l2State = { leftFilled: null, rightFilled: null, requiredTilt: 0 };
+
+        function loadLevel2Question() {
+            isProcessing = false;
+            document.getElementById('level1-ui').style.display = 'none';
+            document.getElementById('level2-ui').style.display = 'flex';
+            
+            // Empty baskets
+            document.getElementById('item-left').innerText = '';
+            document.getElementById('item-right').innerText = '';
+            l2State.leftFilled = null;
+            l2State.rightFilled = null;
+
+            // Set a tilt challenge
+            // angle -15 means Left is down (Heavy), Right is up (Light)
+            // angle 15 means Right is down (Heavy), Left is up (Light)
+            l2State.requiredTilt = Math.random() > 0.5 ? -15 : 15;
+            setBalanceTilt(l2State.requiredTilt);
+
+            const qText = "Make the scale match the tilt!";
+            document.getElementById('question-banner').innerText = qText;
+            speak("Drag a heavy and a light object to match the tilt.");
+
+            // Generate 4 options (1 heavy, 1 light guaranteed, 2 random)
+            const h1 = getRandomItem(dictionary.heavy);
+            const l1 = getRandomItem(dictionary.light);
+            const h2 = getRandomItem(dictionary.heavy);
+            const l2 = getRandomItem(dictionary.light);
+            let options = [h1, l1];
+            // Add two distractors (make sure they are unique enough)
+            options.push(h1.id !== h2.id ? h2 : getRandomItem(dictionary.heavy));
+            options.push(l1.id !== l2.id ? l2 : getRandomItem(dictionary.light));
+            
+            options = shuffleArray(options.slice(0, 4));
+
+            const container = document.getElementById('drag-items-container');
+            container.innerHTML = '';
+
+            options.forEach(opt => {
+                const el = document.createElement('div');
+                el.className = 'draggable-item';
+                el.innerText = opt.icon;
+                el.dataset.weight = opt.weight;
+                el.dataset.id = opt.id;
+                
+                // Custom Drag Handlers for Mobile & Desktop support
+                el.addEventListener('pointerdown', dragStart);
+                container.appendChild(el);
+            });
+        }
+
+        // Custom Universal Drag & Drop (Mouse + Touch)
+        function dragStart(e) {
+            if (isProcessing || e.target.classList.contains('placed')) return;
+            e.preventDefault();
+            
+            draggingElement = e.target;
+            draggingElement.classList.add('dragging');
+            
+            // Get initial touch/mouse position
+            startX = e.clientX || e.touches[0].clientX;
+            startY = e.clientY || e.touches[0].clientY;
+            
+            // Append to body so it floats above everything
+            const rect = draggingElement.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            
+            draggingElement.style.left = initialLeft + 'px';
+            document.body.appendChild(draggingElement);
+            // Re-calc top considering scroll (though game is non-scrolling)
+            draggingElement.style.top = initialTop + 'px';
+
+            document.addEventListener('pointermove', dragMove, {passive: false});
+            document.addEventListener('pointerup', dragEnd);
+        }
+
+        function dragMove(e) {
+            if (!draggingElement) return;
+            e.preventDefault(); // Prevent scrolling while dragging on mobile
+            
+            const currentX = e.clientX || e.touches[0].clientX;
+            const currentY = e.clientY || e.touches[0].clientY;
+            
+            const dx = currentX - startX;
+            const dy = currentY - startY;
+            
+            draggingElement.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+        }
+
+        function dragEnd(e) {
+            if (!draggingElement) return;
+            
+            document.removeEventListener('pointermove', dragMove);
+            document.removeEventListener('pointerup', dragEnd);
+            
+            draggingElement.classList.remove('dragging');
+            
+            // Check Drop Zones (Baskets)
+            const dragRect = draggingElement.getBoundingClientRect();
+            const basketL = document.getElementById('basket-left').getBoundingClientRect();
+            const basketR = document.getElementById('basket-right').getBoundingClientRect();
+            
+            // Simple center-point collision detection
+            const dragCenterX = dragRect.left + dragRect.width / 2;
+            const dragCenterY = dragRect.top + dragRect.height / 2;
+            
+            let dropped = false;
+
+            if (isInside(dragCenterX, dragCenterY, basketL) && !l2State.leftFilled) {
+                placeItemInBasket('left', draggingElement);
+                dropped = true;
+            } else if (isInside(dragCenterX, dragCenterY, basketR) && !l2State.rightFilled) {
+                placeItemInBasket('right', draggingElement);
+                dropped = true;
+            }
+
+            if (!dropped) {
+                // Snap back
+                draggingElement.style.transform = 'none';
+                draggingElement.style.left = '';
+                draggingElement.style.top = '';
+                document.getElementById('drag-items-container').appendChild(draggingElement);
+            }
+            
+            draggingElement = null;
+
+            // Check if both filled to evaluate
+            if (l2State.leftFilled && l2State.rightFilled) {
+                evaluateLevel2();
+            }
+        }
+
+        function isInside(x, y, rect) {
+            // Expanded drop zone slightly for easier kids play
+            const padding = 20; 
+            return x >= rect.left - padding && x <= rect.right + padding &&
+                   y >= rect.top - padding && y <= rect.bottom + padding;
+        }
+
+        function placeItemInBasket(side, element) {
+            const icon = element.innerText;
+            const weight = parseFloat(element.dataset.weight);
+            
+            const targetItem = document.getElementById(`item-${side}`);
+            targetItem.innerText = icon;
+            targetItem.style.opacity = '0';
+            // Slight delay to animate entry
+            setTimeout(() => {
+                targetItem.style.opacity = '1';
+                targetItem.style.bottom = '5px';
+            }, 50);
+
+            if (side === 'left') l2State.leftFilled = weight;
+            if (side === 'right') l2State.rightFilled = weight;
+
+            // Hide original element
+            element.style.display = 'none';
+            element.classList.add('placed');
+            // Put it back in container hidden so DOM is clean
+            document.getElementById('drag-items-container').appendChild(element);
+        }
+
+        function evaluateLevel2() {
+            isProcessing = true;
+            const lWeight = l2State.leftFilled;
+            const rWeight = l2State.rightFilled;
+
+            // Determine what the current placed weights *would* do naturally
+            const naturalTilt = lWeight > rWeight ? -15 : (rWeight > lWeight ? 15 : 0);
+            
+            // Animate scale gently to show their choice's reality
+            setBalanceTilt(naturalTilt);
+
+            setTimeout(() => {
+                // Did their placement match the requested starting tilt condition?
+                // E.g., if reqTilt was -15 (Left down), left must be heavier.
+                const isCorrect = (l2State.requiredTilt === -15 && lWeight > rWeight) ||
+                                  (l2State.requiredTilt === 15 && rWeight > lWeight);
+                
+                handleAnswerResult(isCorrect);
+            }, 800);
+        }
+
+
+        // --- 7. GAME FLOW & FEEDBACK ---
+        
+        function handleAnswerResult(isCorrect) {
+            const overlay = document.getElementById('feedback-popup');
+            const msgEl = document.getElementById('feedback-msg');
+            const iconEl = document.getElementById('feedback-icon');
+
+            if (isCorrect) {
+                score++;
+                msgEl.innerText = "Great Job!";
+                msgEl.style.color = "#4CAF50";
+                iconEl.innerText = "🌟";
+                playSound('success');
+                createConfetti();
+                speak("Great job! Correct answer!");
+            } else {
+                msgEl.innerText = "Oops! Let's try another.";
+                msgEl.style.color = "#F44336";
+                iconEl.innerText = "🤔";
+                playSound('wrong');
+                speak("Oops! Try the next one!");
+            }
+
+            renderStars();
+            overlay.classList.add('active');
+
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                questionCount++;
+                
+                if (questionCount >= maxQuestions) {
+                    endLevel();
+                } else {
+                    if (currentLevel === 1) loadLevel1Question();
+                    else loadLevel2Question();
+                }
+            }, 2500);
+        }
+
+        function endLevel() {
+            switchScreen('screen-end');
+            const msg = document.getElementById('end-score-msg');
+            msg.innerText = `You got ${score} out of ${maxQuestions} Stars!`;
+            
+            const btn = document.getElementById('next-action-btn');
+            if (currentLevel === 1) {
+                btn.innerText = "Play Level 2";
+                speak(`Level 1 complete! You earned ${score} stars.`);
+            } else {
+                btn.innerText = "Play Again";
+                speak(`Game over! You are a weight champion! You earned ${score} stars.`);
+            }
+        }
+
+        function nextAction() {
+            if (currentLevel === 1) {
+                currentLevel = 2;
+                startLevel();
+            } else {
+                // Reset Game
+                currentLevel = 1;
+                switchScreen('screen-start');
+            }
+        }
+
+        function startLevel() {
+            questionCount = 0;
+            score = 0;
+            renderStars();
+            document.getElementById('level-text').innerText = `Level ${currentLevel}`;
+            switchScreen('screen-game');
+            
+            // Initial reset of balance
+            setBalanceTilt(0);
+            
+            if (currentLevel === 1) {
+                loadLevel1Question();
+            } else {
+                loadLevel2Question();
+            }
+        }
+
+        function startGame() {
+            // Audio context requires user interaction to resume
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Warm up speech synthesis (some browsers need an initial empty speak)
+            if ('speechSynthesis' in window) {
+                let utter = new SpeechSynthesisUtterance("");
+                utter.volume = 0;
+                window.speechSynthesis.speak(utter);
+            }
+            
+            startLevel();
+        }
+
+        // Initialize setup
+        window.onload = () => {
+            renderStars();
+            // Pre-load some speech voices if possible
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.onvoiceschanged = function() {
+                    window.speechSynthesis.getVoices();
+                };
+            }
+        };
+
+    </script>
+</body>
+</html>
