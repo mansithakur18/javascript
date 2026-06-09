@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Candy Factory: Even & Odd Adventure</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --bg-color: #f7d794;
+            --even-color: #3498db;
+            --even-dark: #2980b9;
+            --odd-color: #e84393;
+            --odd-dark: #d63031;
+            --text-color: #2d3436;
+           --panel-bg: rgba(255,255,255,0.65);
+            --font-main: 'Comic Sans MS', 'Chalkboard SE', 'Fredoka One', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        .progress-container{
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(5px);
+}
+
+.stat-item{
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(5px);
+}
+
+        body {
+    font-family: var(--font-main);
+
+    background-image: url('background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+
+    color: var(--text-color);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-area{
+    position: relative;
+    z-index: 2;
+}
+
+.game-area::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:transparent;
+    z-index:-1;
+}
+
+        /* Header & Dashboard */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(6px);
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+            border-bottom: 5px solid var(--secondary);
+        }
+
+        .title {
+            font-size: 24px;
+            color: var(--primary);
+            text-shadow: 1px 1px 0px #ffeaa7;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .stat-item {
+            background: #f1f2f6;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 2px solid #dfe4ea;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-item.score { color: #f39c12; }
+        .stat-item.correct { color: #2ecc71; }
+        .stat-item.wrong { color: #e74c3c; }
+
+        .mute-btn {
+            background: #ff7675;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-family: inherit;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 0 #d63031;
+        }
+        .mute-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #d63031;
+        }
+
+        /* Learning Card */
+        .learning-card {
+            background: var(--panel-bg);
+            margin: 10px auto;
+            padding: 10px 30px;
+            border-radius: 30px;
+            border: 4px dashed var(--primary);
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .rule {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .rule.even { color: var(--even-dark); }
+        .rule.odd { color: var(--odd-dark); }
+        .rule-numbers {
+            font-size: 24px;
+            background: #fff;
+            padding: 5px 15px;
+            border-radius: 15px;
+            margin-top: 5px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 80%;
+            margin: 0 auto;
+            background: #dfe4ea;
+            height: 25px;
+            border-radius: 15px;
+            border: 3px solid #ced6e0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fdcb6e, #e17055);
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: #2d3436;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+        }
+
+        /* Game Area */
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 30px;
+            position: relative;
+        }
+
+        /* Factory Machine & Conveyor */
+        .factory-machine {
+            width: 150px;
+            height: 100px;
+            background: linear-gradient(to bottom, #bdc3c7, #95a5a6);
+            border-radius: 20px 20px 0 0;
+            border: 5px solid #7f8c8d;
+            border-bottom: none;
+            position: relative;
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 2;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .machine-opening {
+            width: 80px;
+            height: 40px;
+            background: #2c3e50;
+            border-radius: 40px 40px 0 0;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        .machine-lights {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .light {
+            width: 15px; height: 15px;
+            border-radius: 50%;
+            background: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+            animation: blink 1s infinite alternate;
+        }
+        .light:nth-child(2) { background: #f1c40f; box-shadow: 0 0 10px #f1c40f; animation-delay: 0.5s; }
+        .light:nth-child(3) { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; animation-delay: 1s; }
+
+        @keyframes blink {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .conveyor-belt {
+            width: 90%;
+            max-width: 800px;
+            height: 60px;
+            background: repeating-linear-gradient(90deg, #34495e, #34495e 30px, #2c3e50 30px, #2c3e50 60px);
+            border: 6px solid #7f8c8d;
+            border-radius: 30px;
+            position: relative;
+            box-shadow: 0 15px 0 #95a5a6, 0 20px 15px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: moveBelt 1.5s linear infinite;
+        }
+
+        @keyframes moveBelt {
+            from { background-position: 0 0; }
+            to { background-position: 60px 0; }
+        }
+
+        .gears {
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .gear {
+            width: 40px; height: 40px;
+            background: #95a5a6;
+            border-radius: 50%;
+            border: 4px dashed #7f8c8d;
+            animation: spin 2s linear infinite;
+            box-shadow: 0 5px 5px rgba(0,0,0,0.3);
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Candy */
+        .candy-container {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .candy {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff9ff3, #f368e0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            border: 5px solid #fff;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2), 0 10px 15px rgba(0,0,0,0.3);
+            position: relative;
+            cursor: grab;
+            animation: float 2s infinite ease-in-out;
+        }
+
+        .candy:active { cursor: grabbing; transform: scale(0.95); }
+
+        .candy::before, .candy::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0; height: 0;
+            border-top: 25px solid transparent;
+            border-bottom: 25px solid transparent;
+            z-index: -1;
+        }
+
+        .candy::before {
+            left: -35px;
+            border-right: 45px solid rgba(255,255,255,0.9);
+            filter: drop-shadow(-3px 3px 2px rgba(0,0,0,0.2));
+        }
+
+        .candy::after {
+            right: -35px;
+            border-left: 45px solid rgba(255,255,255,0.9);
+            filter: drop-shadow(3px 3px 2px rgba(0,0,0,0.2));
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        .candy.popping-in {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) translateY(-50px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* Drop Boxes */
+        .boxes-container {
+            display: flex;
+            gap: 40px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            margin-top: 40px;
+            padding: 0 20px;
+        }
+
+        .drop-box {
+            flex: 1;
+            max-width: 300px;
+            height: 200px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.2), inset 0 10px 20px rgba(255,255,255,0.2);
+            position: relative;
+            transition: all 0.3s ease;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            border: 8px solid rgba(255,255,255,0.3);
+        }
+
+        .box-even { background: linear-gradient(135deg, #74b9ff, var(--even-color)); box-shadow: 0 15px 0 var(--even-dark), inset 0 10px 20px rgba(255,255,255,0.2); }
+        .box-odd { background: linear-gradient(135deg, #fd79a8, var(--odd-color)); box-shadow: 0 15px 0 var(--odd-dark), inset 0 10px 20px rgba(255,255,255,0.2); }
+
+        .drop-box::after {
+            content: 'Drop Here!';
+            position: absolute;
+            bottom: 20px;
+            font-size: 18px;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 15px;
+            border-radius: 15px;
+        }
+
+        .drop-box.drag-over {
+            transform: scale(1.1);
+            border-color: #fff;
+            filter: brightness(1.2);
+        }
+
+        /* Feedback Popup */
+        .feedback-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 30px 50px;
+            border-radius: 30px;
+            font-size: 40px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 8px solid;
+        }
+
+        .feedback-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .feedback-correct { color: #2ecc71; border-color: #2ecc71; }
+        .feedback-wrong { color: #e74c3c; border-color: #e74c3c; font-size: 30px; }
+
+        .feedback-icon {
+            font-size: 60px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(-50px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            border: 6px solid var(--secondary);
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 36px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .modal-text {
+            font-size: 22px;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .modal-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: inherit;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 6px 0 #16a085;
+            transition: all 0.2s;
+        }
+
+        .modal-btn:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 8px 0 #16a085; }
+        .modal-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #16a085; }
+
+        .stars-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            height: 60px;
+        }
+
+        .star {
+            width: 50px; height: 50px;
+            background: #f1c40f;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            transform: scale(0);
+        }
+
+        .star.animate {
+            animation: popStar 0.5s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popStar {
+            0% { transform: scale(0) rotate(-45deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* Confetti */
+        #confetti-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 150;
+            overflow: hidden;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 15px; height: 15px;
+            top: -20px;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+        /* Certificate */
+        .certificate {
+            background: #fff9c4;
+            border: 8px solid #ffca28;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .cert-title { color: #f57f17; font-size: 28px; border-bottom: 2px dashed #f57f17; padding-bottom: 10px; margin-bottom: 15px;}
+        .cert-stat { display: flex; justify-content: space-between; font-size: 20px; margin-bottom: 10px; border-bottom: 1px solid #ffe082; padding-bottom: 5px;}
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 10px; }
+            .learning-card { flex-direction: column; gap: 10px; padding: 10px; text-align: center; }
+            .boxes-container { gap: 20px; }
+            .drop-box { height: 150px; font-size: 30px; }
+            .candy { width: 70px; height: 70px; font-size: 28px; }
+            .conveyor-belt { height: 40px; }
+            .modal-content { padding: 20px; }
+            .stats-bar { font-size: 14px; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title">
+            <div style="font-size: 30px;">🏭</div> Candy Factory
+        </div>
+        <div class="stats-bar">
+            <div class="stat-item">Level: <span id="ui-level">1</span></div>
+            <div class="stat-item score">Score: <span id="ui-score">0</span></div>
+            <div class="stat-item correct">✔️ <span id="ui-correct">0</span></div>
+            <div class="stat-item wrong">❌ <span id="ui-wrong">0</span></div>
+        </div>
+        <button class="mute-btn" id="mute-btn">🔊 Sound On</button>
+    </header>
+
+    <div class="learning-card">
+        <div class="rule even">
+            <div>🟦 EVEN NUMBERS</div>
+            <div class="rule-numbers">0, 2, 4, 6, 8</div>
+        </div>
+        <div class="rule odd">
+            <div>🟥 ODD NUMBERS</div>
+            <div class="rule-numbers">1, 3, 5, 7, 9</div>
+        </div>
+    </div>
+
+    <div style="padding-top: 10px;">
+        <div class="progress-container">
+            <div class="progress-fill" id="progress-fill"></div>
+            <div class="progress-text" id="progress-text">Question 1 of 5</div>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <div class="factory-machine">
+            <div class="machine-lights">
+                <div class="light"></div>
+                <div class="light"></div>
+                <div class="light"></div>
+            </div>
+            <div class="machine-opening"></div>
+        </div>
+
+        <div class="conveyor-belt">
+            <div class="candy-container" id="candy-container">
+                <!-- Candy dynamically injected here -->
+            </div>
+            <div class="gears">
+                <div class="gear"></div>
+                <div class="gear"></div>
+                <div class="gear"></div>
+                <div class="gear"></div>
+                <div class="gear"></div>
+                <div class="gear"></div>
+            </div>
+        </div>
+
+        <div class="boxes-container">
+            <div class="drop-box box-even" id="box-even">EVEN</div>
+            <div class="drop-box box-odd" id="box-odd">ODD</div>
+        </div>
+    </div>
+
+    <!-- Feedback Popup -->
+    <div class="feedback-popup" id="feedback-popup">
+        <span class="feedback-icon" id="feedback-icon">🌟</span>
+        <div id="feedback-text">Awesome!</div>
+    </div>
+
+    <!-- Level Complete / Retry Modal -->
+    <div class="modal-overlay" id="level-modal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="level-modal-title">Level Complete!</h2>
+            <div class="stars-container" id="level-stars">
+                <div class="star"></div>
+                <div class="star"></div>
+                <div class="star"></div>
+            </div>
+            <p class="modal-text" id="level-modal-text">Great job sorting those candies!</p>
+            <button class="modal-btn" id="level-modal-btn">Next Level</button>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div class="modal-overlay" id="victory-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">🎉 Candy Factory Master 🎉</h2>
+            <div class="certificate">
+                <div class="cert-title">Official Certificate</div>
+                <div class="cert-stat"><span>Total Score:</span> <strong id="final-score">0</strong></div>
+                <div class="cert-stat" style="color:#2ecc71"><span>Total Correct:</span> <strong id="final-correct">0</strong></div>
+                <div class="cert-stat" style="color:#e74c3c"><span>Total Wrong:</span> <strong id="final-wrong">0</strong></div>
+                <div class="cert-stat" style="color:#f39c12"><span>Stars Earned:</span> <strong id="final-stars">0</strong></div>
+            </div>
+            <p class="modal-text">You are an Even and Odd expert!</p>
+            <button class="modal-btn" onclick="resetFullGame()">Play Again</button>
+        </div>
+    </div>
+
+    <div id="confetti-layer"></div>
+
+    <script>
+        // --- GAME CONFIGURATION ---
+        const QUESTIONS_PER_LEVEL = 5;
+        const LEVELS = [
+            { id: 1, min: 1, max: 20 },
+            { id: 2, min: 21, max: 50 },
+            { id: 3, min: 51, max: 100 },
+            { id: 4, min: 101, max: 200 },
+            { id: 5, min: 201, max: 500 }
+        ];
+
+        // --- GAME STATE ---
+        let state = {
+            levelIndex: 0,
+            questionIndex: 0,
+            correctInLevel: 0,
+            wrongInLevel: 0,
+            totalScore: 0,
+            totalCorrect: 0,
+            totalWrong: 0,
+            totalStars: 0,
+            currentNumber: 0,
+            isProcessing: false // Prevents rapid drag-drops
+        };
+
+        // --- AUDIO SYSTEM ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let isMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        document.getElementById('mute-btn').addEventListener('click', function() {
+            isMuted = !isMuted;
+            this.textContent = isMuted ? '🔇 Sound Off' : '🔊 Sound On';
+            this.style.background = isMuted ? '#b2bec3' : '#ff7675';
+            this.style.boxShadow = isMuted ? '0 4px 0 #636e72' : '0 4px 0 #d63031';
+        });
+
+        function playSound(type) {
+            if (isMuted) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.linearRampToValueAtTime(150, now + 0.3);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'victory') {
+                const freqs = [523.25, 659.25, 783.99, 1046.50];
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'square';
+                    o.frequency.value = f;
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    g.gain.setValueAtTime(0, now + i*0.1);
+                    g.gain.linearRampToValueAtTime(0.2, now + i*0.1 + 0.05);
+                    g.gain.linearRampToValueAtTime(0, now + i*0.1 + 0.3);
+                    o.start(now + i*0.1);
+                    o.stop(now + i*0.1 + 0.3);
+                });
+            }
+        }
+
+        // --- DOM ELEMENTS ---
+        const uiLevel = document.getElementById('ui-level');
+        const uiScore = document.getElementById('ui-score');
+        const uiCorrect = document.getElementById('ui-correct');
+        const uiWrong = document.getElementById('ui-wrong');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const candyContainer = document.getElementById('candy-container');
+        const boxEven = document.getElementById('box-even');
+        const boxOdd = document.getElementById('box-odd');
+        const feedbackPopup = document.getElementById('feedback-popup');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const feedbackText = document.getElementById('feedback-text');
+        
+        // Modals
+        const levelModal = document.getElementById('level-modal');
+        const levelModalTitle = document.getElementById('level-modal-title');
+        const levelModalText = document.getElementById('level-modal-text');
+        const levelModalBtn = document.getElementById('level-modal-btn');
+        const levelStars = document.getElementById('level-stars');
+        const victoryModal = document.getElementById('victory-modal');
+
+        // --- CORE LOGIC ---
+
+        function updateDashboard() {
+            uiLevel.innerText = LEVELS[state.levelIndex].id;
+            uiScore.innerText = state.totalScore;
+            uiCorrect.innerText = state.totalCorrect;
+            uiWrong.innerText = state.totalWrong;
+
+            const progress = (state.questionIndex / QUESTIONS_PER_LEVEL) * 100;
+            progressFill.style.width = `${progress}%`;
+            progressText.innerText = `Question ${Math.min(state.questionIndex + 1, QUESTIONS_PER_LEVEL)} of ${QUESTIONS_PER_LEVEL}`;
+        }
+
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        const candyColors = [
+            ['#ff9ff3', '#f368e0'],
+            ['#feca57', '#ff9f43'],
+            ['#48dbfb', '#0abde3'],
+            ['#1dd1a1', '#10ac84'],
+            ['#ff6b6b', '#ee5253']
+        ];
+
+        function spawnCandy() {
+            candyContainer.innerHTML = ''; // Clear previous
+            state.isProcessing = false;
+
+            const levelConf = LEVELS[state.levelIndex];
+            state.currentNumber = getRandomNumber(levelConf.min, levelConf.max);
+
+            const candy = document.createElement('div');
+            candy.className = 'candy popping-in';
+            candy.innerText = state.currentNumber;
+            candy.draggable = true;
+
+            // Randomize color
+            const colors = candyColors[Math.floor(Math.random() * candyColors.length)];
+            candy.style.background = `radial-gradient(circle at 30% 30%, ${colors[0]}, ${colors[1]})`;
+
+            // Drag Events (HTML5)
+            candy.addEventListener('dragstart', handleDragStart);
+            candy.addEventListener('dragend', handleDragEnd);
+
+            // Touch Events (for mobile accessibility)
+            candy.addEventListener('touchstart', handleTouchStart, {passive: false});
+            candy.addEventListener('touchmove', handleTouchMove, {passive: false});
+            candy.addEventListener('touchend', handleTouchEnd);
+
+            candyContainer.appendChild(candy);
+            updateDashboard();
+        }
+
+        // --- DRAG AND DROP HANDLING (MOUSE) ---
+        function handleDragStart(e) {
+            if (state.isProcessing) {
+                e.preventDefault();
+                return;
+            }
+            initAudio(); // Initialize audio on first interaction
+            e.dataTransfer.setData('text/plain', state.currentNumber);
+            setTimeout(() => this.style.opacity = '0.5', 0);
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+        }
+
+        // --- TOUCH HANDLING (MOBILE) ---
+        let touchCandy = null;
+        let initialX = 0, initialY = 0;
+
+        function handleTouchStart(e) {
+            if (state.isProcessing) return;
+            initAudio();
+            touchCandy = this;
+            const touch = e.touches[0];
+            initialX = touch.clientX - touchCandy.getBoundingClientRect().left;
+            initialY = touch.clientY - touchCandy.getBoundingClientRect().top;
+            touchCandy.style.position = 'fixed';
+            touchCandy.style.zIndex = 1000;
+            moveTouchCandy(touch.clientX, touch.clientY);
+            e.preventDefault(); // Prevent scrolling
+        }
+
+        function handleTouchMove(e) {
+            if (!touchCandy) return;
+            const touch = e.touches[0];
+            moveTouchCandy(touch.clientX, touch.clientY);
+            
+            // Highlight boxes on touch hover
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+            boxEven.classList.remove('drag-over');
+            boxOdd.classList.remove('drag-over');
+            if (dropTarget) {
+                if (dropTarget.closest('#box-even')) boxEven.classList.add('drag-over');
+                if (dropTarget.closest('#box-odd')) boxOdd.classList.add('drag-over');
+            }
+            e.preventDefault();
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchCandy) return;
+            const touch = e.changedTouches[0];
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            boxEven.classList.remove('drag-over');
+            boxOdd.classList.remove('drag-over');
+            touchCandy.style.position = '';
+            touchCandy.style.left = '';
+            touchCandy.style.top = '';
+            touchCandy.style.zIndex = '';
+            touchCandy.style.transform = '';
+
+            if (dropTarget) {
+                let boxId = null;
+                if (dropTarget.closest('#box-even')) boxId = 'box-even';
+                else if (dropTarget.closest('#box-odd')) boxId = 'box-odd';
+
+                if (boxId) {
+                    processAnswer(boxId);
+                }
+            }
+            touchCandy = null;
+        }
+
+        function moveTouchCandy(x, y) {
+            touchCandy.style.left = (x - initialX) + 'px';
+            touchCandy.style.top = (y - initialY) + 'px';
+            touchCandy.style.transform = 'none';
+        }
+
+        // --- DROP BOX SETUP ---
+        [boxEven, boxOdd].forEach(box => {
+            box.addEventListener('dragover', e => {
+                e.preventDefault();
+                if(!state.isProcessing) box.classList.add('drag-over');
+            });
+            box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
+            box.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                if (state.isProcessing) return;
+                processAnswer(this.id);
+            });
+        });
+
+
+        // --- GAME LOGIC ---
+        function processAnswer(boxId) {
+            state.isProcessing = true;
+            candyContainer.innerHTML = ''; // Remove candy immediately
+
+            const isEven = state.currentNumber % 2 === 0;
+            const droppedEven = boxId === 'box-even';
+            const isCorrect = isEven === droppedEven;
+
+            if (isCorrect) {
+                handleCorrect();
+            } else {
+                handleWrong(isEven ? 'even' : 'odd');
+            }
+
+            // Move to next question after delay
+            setTimeout(() => {
+                feedbackPopup.classList.remove('show');
+                state.questionIndex++;
+                updateDashboard();
+
+                if (state.questionIndex < QUESTIONS_PER_LEVEL) {
+                    spawnCandy();
+                } else {
+                    checkLevelCompletion();
+                }
+            }, 1800);
+        }
+
+        function handleCorrect() {
+            playSound('correct');
+            state.correctInLevel++;
+            state.totalCorrect++;
+            state.totalScore += 10;
+            
+            feedbackPopup.className = 'feedback-popup feedback-correct show';
+            const messages = ["Awesome!", "Great Job!", "Correct!", "Super!", "You Rock!"];
+            feedbackText.innerText = messages[Math.floor(Math.random() * messages.length)];
+            feedbackIcon.innerText = "🌟";
+        }
+
+        function handleWrong(actualType) {
+            playSound('wrong');
+            state.wrongInLevel++;
+            state.totalWrong++;
+
+            feedbackPopup.className = 'feedback-popup feedback-wrong show';
+            feedbackText.innerHTML = `Oops!<br><span style="font-size:24px">${state.currentNumber} is ${actualType}.</span><br><span style="font-size:20px">Try Again Next Time!</span>`;
+            feedbackIcon.innerText = "❌";
+        }
+
+        function checkLevelCompletion() {
+            if (state.correctInLevel === QUESTIONS_PER_LEVEL) {
+                // Perfect score! Move to next level
+                playSound('victory');
+                state.totalStars += 3;
+                
+                // Animate stars
+                levelStars.innerHTML = '';
+                for(let i=0; i<3; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    levelStars.appendChild(star);
+                    setTimeout(() => star.classList.add('animate'), i * 200);
+                }
+
+                levelModalTitle.innerText = "Level Complete!";
+                levelModalTitle.style.color = "#2ecc71";
+                levelModalText.innerText = `Flawless! You earned 3 stars!`;
+                
+                if (state.levelIndex < LEVELS.length - 1) {
+                    levelModalBtn.innerText = "Next Level";
+                    levelModalBtn.onclick = () => {
+                        levelModal.classList.remove('show');
+                        state.levelIndex++;
+                        resetLevelState();
+                        spawnCandy();
+                    };
+                } else {
+                    // Game Complete
+                    levelModalBtn.innerText = "Finish Game";
+                    levelModalBtn.onclick = () => {
+                        levelModal.classList.remove('show');
+                        showVictory();
+                    };
+                }
+            } else {
+                // Did not get all correct
+                levelStars.innerHTML = ''; // No stars
+                levelModalTitle.innerText = "Great Try!";
+                levelModalTitle.style.color = "#e74c3c";
+                levelModalText.innerText = `You need all ${QUESTIONS_PER_LEVEL} correct answers to unlock the next level. Let's try again!`;
+                levelModalBtn.innerText = "Retry Level";
+                levelModalBtn.onclick = () => {
+                    levelModal.classList.remove('show');
+                    // Reverse score additions for the failed level
+                    state.totalScore -= (state.correctInLevel * 10);
+                    state.totalCorrect -= state.correctInLevel;
+                    state.totalWrong -= state.wrongInLevel;
+                    
+                    resetLevelState();
+                    spawnCandy();
+                };
+            }
+            levelModal.classList.add('show');
+        }
+
+        function resetLevelState() {
+            state.questionIndex = 0;
+            state.correctInLevel = 0;
+            state.wrongInLevel = 0;
+            updateDashboard();
+        }
+
+        function showVictory() {
+            playSound('victory');
+            fireConfetti();
+            document.getElementById('final-score').innerText = state.totalScore;
+            document.getElementById('final-correct').innerText = state.totalCorrect;
+            document.getElementById('final-wrong').innerText = state.totalWrong;
+            document.getElementById('final-stars').innerText = state.totalStars + " ⭐";
+            victoryModal.classList.add('show');
+        }
+
+        function resetFullGame() {
+            victoryModal.classList.remove('show');
+            document.getElementById('confetti-layer').innerHTML = '';
+            state = {
+                levelIndex: 0,
+                questionIndex: 0,
+                correctInLevel: 0,
+                wrongInLevel: 0,
+                totalScore: 0,
+                totalCorrect: 0,
+                totalWrong: 0,
+                totalStars: 0,
+                currentNumber: 0,
+                isProcessing: false
+            };
+            spawnCandy();
+        }
+
+        // --- CONFETTI EFFECT ---
+        function fireConfetti() {
+            const container = document.getElementById('confetti-layer');
+            container.innerHTML = '';
+            const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d', '#2ecc71', '#3498db'];
+            for(let i=0; i<150; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti-piece';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                conf.style.animationDelay = (Math.random() * 1) + 's';
+                
+                // Random shapes
+                if (Math.random() > 0.5) {
+                    conf.style.borderRadius = '50%';
+                }
+                container.appendChild(conf);
+            }
+        }
+
+        // Initialize Game
+        window.onload = () => {
+            spawnCandy();
+        };
+
+    </script>
+</body>
+</html>
